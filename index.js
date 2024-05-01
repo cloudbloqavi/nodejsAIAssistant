@@ -1,5 +1,5 @@
 const express = require("express");
-const openAI = require("openai");
+// const openAI = require("openai");
 
 // Importing the dotenv module to access environment variables
 require("dotenv").config();
@@ -17,38 +17,35 @@ app.use(bp.json());
 app.use(bp.urlencoded({ extended: true }));
 
 // Importing and setting up the OpenAI API client
-const { Configuration, OpenAIApi } = require("openai");
-const configuration = new Configuration({
+const { Configuration, OpenAI } = require("openai");
+const openaiInstance = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+  temperature: 0.5
 });
-const openai = new OpenAIApi(configuration);
 
 // Defining a conversation context prompt
 const conversationContextPrompt =
-  "The following is a conversation with an AI assistant. The assistant is helpful, creative, clever, and very friendly.\n\nHuman: Hello, who are you?\nAI: I am an AI created by OpenAI. How can I help you today?\nHuman: ";
+  "The following is a conversation with an AI assistant. The assistant is helpful, creative, clever, and very friendly.\n\nHuman: Hello, who are you?\nAI: I am an AI created by OpenAI. How can I help you today?";
 
 // Defining an endpoint to handle incoming requests
-app.post("/converse", (req, res) => {
+app.post("/converse", async (req, res) => {
   // Extracting the user's message from the request body
   const message = req.body.message;
 
-  // Calling the OpenAI API to complete the message
-  openai
-    .createCompletion({
-      model: "text-davinci-003",
-      // Adding the conversation context to the message being sent
-      prompt: conversationContextPrompt + message,
-      temperature: 0.9,
-      max_tokens: 150,
-      top_p: 1,
-      frequency_penalty: 0,
-      presence_penalty: 0.6,
-      stop: [" Human:", " AI:"],
-    })
-    .then((response) => {
-      // Sending the response data back to the client
-      res.send(response.data.choices);
-    });
+  // Define your chat messages
+const messages = [
+  { role: 'system', content: conversationContextPrompt }, // System message
+  { role: 'user', content: message }
+];
+
+  const chatCompletion = await openaiInstance.chat.completions.create({
+    messages,
+    model: 'gpt-3.5-turbo'
+  });
+
+  // Print the generated response
+  console.log(chatCompletion.choices[0].message.content);
+  res.send(chatCompletion.choices[0].message.content);
 });
 
 // Starting the Express app and listening on port 3000
